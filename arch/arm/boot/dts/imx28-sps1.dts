@@ -38,6 +38,18 @@
 					fsl,pull-up = <0>;
 				};
 
+				sc_auart2_pins_a: sc_auart2-pins@0 {
+					reg = <0>;
+					fsl,pinmux-ids = <
+						0x3080 /* MX28_PAD_AUART2_RX__AUART2_RX */
+						0x3090 /* MX28_PAD_AUART2_TX__AUART2_TX */
+						0x30a0 /* MX28_PAD_AUART2_CTS__AUART2_CTS */
+						0x30b0 /* MX28_PAD_AUART2_RTS__AUART2_RTS */		
+					>;
+					fsl,drive-strength = <0>;
+					fsl,voltage = <1>;
+					fsl,pull-up = <0>;
+				};
 			};
 
 			ssp0: ssp@80010000 {
@@ -94,11 +106,28 @@
 				status = "okay";
 			};
 
+			usbphy1: usbphy@8007e000 {
+				status = "okay";
+			};
+			 
 			auart0: serial@8006a000 {
 				pinctrl-names = "default";
 				pinctrl-0 = <&auart0_pins_a>;
 				status = "okay";
 			};
+			
+			auart1: serial@8006c000 {
+				pinctrl-names = "default";
+				pinctrl-0 = <&auart1_2pins_a>;
+				status = "okay";
+            };
+            
+			auart2: serial@8006e000 {
+				pinctrl-names = "default";
+				pinctrl-0 = <&sc_auart2_pins_a>;
+				fsl,uart-has-rtscts;
+				status = "okay";
+            };
 		};
 	};
 
@@ -109,11 +138,17 @@
 			pinctrl-0 = <&usbphy0_pins_b>;
 			status = "okay";
 		};
-
+		
+		usb1: usb@80090000 {
+			status = "okay";
+		};
+		
 		mac0: ethernet@800f0000 {
 			phy-mode = "rmii";
 			pinctrl-names = "default";
 			pinctrl-0 = <&mac0_pins_a>;
+			phy-reset-gpios = <&gpio4 13 0>;
+			phy-reset-duration = <100>;
 			status = "okay";
 		};
 
