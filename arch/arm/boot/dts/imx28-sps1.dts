@@ -38,13 +38,38 @@
 					fsl,pull-up = <0>;
 				};
 
-				sc_auart2_pins_a: sc_auart2-pins@0 {
+				auart2_rs485_tx_en: auart2_rs485_tx_en {
+					fsl,pinmux-ids = <
+ 						0x30b3 /* MX28_PAD_AUART2_RTS__GPIO_3_11 UART2_DIR */
+ 					>;
+ 					fsl,drive-strength = <0>;
+ 					fsl,pull-up = <1>;
+ 				};
+
+				sc_auart2_2pins_a: sc_auart2-2pins@0 {
 					reg = <0>;
 					fsl,pinmux-ids = <
 						0x3080 /* MX28_PAD_AUART2_RX__AUART2_RX */
 						0x3090 /* MX28_PAD_AUART2_TX__AUART2_TX */
-						0x30a0 /* MX28_PAD_AUART2_CTS__AUART2_CTS */
-						0x30b0 /* MX28_PAD_AUART2_RTS__AUART2_RTS */		
+					>;
+					fsl,drive-strength = <0>;
+					fsl,voltage = <1>;
+					fsl,pull-up = <0>;
+				};
+				
+				auart3_rs485_tx_en: auart3_rs485_tx_en {
+					fsl,pinmux-ids = <
+ 						0x30f3 /* MX28_PAD_AUART3_RTS__GPIO_3_15 UART3_DIR */
+ 					>;
+ 					fsl,drive-strength = <0>;
+ 					fsl,pull-up = <1>;
+ 				};
+ 				
+				sc_auart3_2pins_a: sc_auart3-2pins@0 {
+					reg = <0>;
+					fsl,pinmux-ids = <
+						0x30c0 /* MX28_PAD_AUART3_RX__AUART3_RX */
+						0x30d0 /* MX28_PAD_AUART3_TX__AUART3_TX */
 					>;
 					fsl,drive-strength = <0>;
 					fsl,voltage = <1>;
@@ -122,12 +147,27 @@
 				status = "okay";
             };
             
-			auart2: serial@8006e000 {
-				pinctrl-names = "default";
-				pinctrl-0 = <&sc_auart2_pins_a>;
-				fsl,uart-has-rtscts;
-				status = "okay";
-            };
+            auart2: serial@8006e000 {
+ 				compatible = "fsl,imx28-ekuart";
+ 				pinctrl-names = "default";
+ 				pinctrl-0 = <&sc_auart2_2pins_a &auart2_rs485_tx_en>;
+ 				rs485-rts-active-low;
+ 				rts-gpio = <&gpio3 11 1>;
+ 				linux,rs485-enabled-at-boot-time;
+ 				rs485-rts-delay = <0 0>;
+ 				status = "okay";
+ 			};
+ 			
+ 			auart3: serial@80070000 {
+ 				compatible = "fsl,imx28-ekuart";
+ 				pinctrl-names = "default";
+ 				pinctrl-0 = <&sc_auart3_2pins_a &auart3_rs485_tx_en>;
+ 				rs485-rts-active-low;
+ 				rts-gpio = <&gpio3 15 1>;
+ 				linux,rs485-enabled-at-boot-time;
+ 				rs485-rts-delay = <0 50>;
+ 				status = "okay";
+ 			};
 		};
 	};
 
