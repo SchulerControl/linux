@@ -152,7 +152,7 @@
 
 /* Lower less verbose, higher more verbose */
 static int debuglevel = ERROR;
-static int hr_resolution = MILLI;
+static int hr_resolution = MICRO;
 
 /*
 * A seconda della granularita` richiesta si puo` utilizzare:
@@ -407,12 +407,18 @@ enum hrtimer_restart end_of_tx_hrtimer( struct hrtimer *timer )
 		 * trasmissione! C'e` ancora qualcosa in transito sullo shift
 		 * register. Ci riscateniamo tra un bitclock oppure tra 50
 		 * microsecondi per sicurezza... */
-		pdebug(ERROR, "Time too short for HRTIMER (%p)\n", up);
-
-		us_to_wait = (1000000L / up->baudrate);
-
-		if (us_to_wait < 50)
-			us_to_wait = 50;
+		
+		/* Writing a string into the log needes about 8-10 ms time! 
+		 * Consider this when setting log level for this driver. */
+		pdebug(VERBOSE, "Time too short for HRTIMER (%p)\n", up);
+		
+		/*
+		 * Wait another 50 us - should be possible to wait within one 
+		 * timer tick (resolution is around 30-50 us). Do not wait a 
+		 * relative time related to baud rate, to get minimal RTS active 
+		 * low time.
+		 */
+		us_to_wait = 50;
 
 		ktime = ktime_set( 0, us_to_wait * 1000L );
 		hrtimer_start( &up->hr_timer_post, ktime, HRTIMER_MODE_REL);
@@ -533,7 +539,15 @@ static void mxs_auart_tx_chars(struct mxs_auart_port *s)
 			 */
 			us_to_wait = ((1000000L*s->datasize +
 				(s->baudrate - 1) /* arrotondiamo per eccesso */ ) /
-				s->baudrate) * txcount;
+				s->baudrate) * txcount
+				- 30;	/* 
+						 * Subtract 30 us to enforce early timer callback 
+						 * and additional 50 us timer tick. This results 
+						 * in the lowest time the RTS is active low. 
+						 * Evaluated due to experimental setup for SPS-1 
+						 * hardware.
+						 */
+			
 			pdebug(VERBOSE, "Bitrate: %d -- Datasize: %d -- TXCOUNT: %d"
 				" - RS485_DELAY_RTS_AFTER_SEND: %d\n"
 				"** us_to_wait = %lu TXFE: %d\n",
@@ -1245,8 +1259,9 @@ static int serial_mxs_probe_dt(struct mxs_auart_port *s,
 			pdebug(ERROR, "Can't request tx_gpio: %d - Exit\n", ret);
 			return ret;
 		}
+		/* Changed logic to check against rs485 flags instead of GPIO flags */
 		ret = gpio_direction_output(s->tx_gpio,
-									flags & SER_RS485_RTS_AFTER_SEND);
+									(rs485conf->flags & SER_RS485_RTS_AFTER_SEND) ? 1 : 0);
 		if (ret < 0) {
 			pdebug(ERROR, "Cannot set direction for output"
 				" in TX GPIO - Exit\n");
@@ -1269,8 +1284,9 @@ static int serial_mxs_probe_dt(struct mxs_auart_port *s,
 			gpio_free(s->tx_gpio);
 			return ret;
 		}
+		/* Changed logic to check against rs485 flags instead of GPIO flags */
 		ret = gpio_direction_output(s->rx_gpio,
-						!(flags & SER_RS485_RTS_AFTER_SEND));
+									!(rs485conf->flags & SER_RS485_RTS_AFTER_SEND));
 		if (ret < 0) {
 			pdebug(ERROR, "Cannot set direction for output "
 					"in RX GPIO - Exit\n");
